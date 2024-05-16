@@ -1,5 +1,7 @@
 diff-cover |pypi-version| |conda-version| |build-status|
 ========================================================================================
+覆盖率增强版与原版区别：原版html增量覆盖率只标记新增未覆盖的行新版会标记新增已覆盖的行。
+使用方式：下载源码，使用poetry打包，然后pip安装自己打出来的包。
 
 Automatically find diff lines that need test coverage.
 Also finds diff lines that have violations (according to tools such
