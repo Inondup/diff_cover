@@ -15,7 +15,7 @@ from pygments.lexers.special import TextLexer
 from pygments.util import ClassNotFound
 
 from diff_cover.git_path import GitPathTool
-
+from bs4 import BeautifulSoup
 
 class Snippet:
     """
@@ -24,6 +24,7 @@ class Snippet:
 
     VIOLATION_COLOR = "#ffcccc"
     DIV_CSS_CLASS = "snippet"
+    COVERED_COLOR = "#ccffcc"
 
     # Number of extra lines to include before and after
     # each snippet to provide context.
@@ -111,7 +112,34 @@ class Snippet:
             lineanchors=self._src_filename,
         )
 
-        return pygments.format(self.src_tokens(), formatter)
+        # 使用pygments格式化源代码
+        formatted_code = pygments.format(self.src_tokens(), formatter)
+
+        # 使用BeautifulSoup解析生成的HTML代码
+        soup = BeautifulSoup(formatted_code, 'html.parser')
+
+        # 对于每一个覆盖的行，我们需要在生成的HTML中找到对应的行，并添加样式
+        for line in self._covered_lines:
+            # 查找对应行号的锚点元素
+            anchor = soup.find('a', {'name': f"{self._src_filename}-{line}"})
+            if anchor:
+                # 创建一个新的span元素，用于包裹后续的元素
+                new_span_wrapper = soup.new_tag('span', style=f"background-color: {self.COVERED_COLOR};")
+                # 获取锚点元素的父元素
+                parent = anchor.parent
+                # 修改点：不再将锚点元素本身包裹在新的span中，而是从锚点元素的下一个兄弟开始包裹
+                elements_to_wrap = []
+                for sibling in anchor.next_siblings:
+                    if sibling.name == 'a':
+                        break
+                    elements_to_wrap.append(sibling)
+                for elem in elements_to_wrap:
+                    new_span_wrapper.append(elem.extract())
+                # 修改点：将新的span元素插入到锚点元素之后
+                anchor.insert_after(new_span_wrapper)
+
+        # 返回修改后的HTML代码
+        return str(soup)
 
     def markdown(self):
         """
